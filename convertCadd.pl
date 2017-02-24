@@ -119,15 +119,15 @@ sub processRegion{
     my $cadds = shift;
     return if not @$cadds;
     my $chr   = $cadds->[0]->[0];
-    my $start = $cadds->[0]->[1];
+    my $start = $cadds->[0]->[1] - 1;#for BED format
     my $end   = $cadds->[-1]->[1];
-    my $coord = "chr$chr:$start-$end";
+    my $coord = "chr$chr\t$start\t$end";
     my $lifted = doLiftOver($coord); 
     my ($chrom, $reg_start, $reg_end)  = parseLiftOverResult($lifted); 
     if ( defined $chrom and ($reg_end - $reg_start) == ($end - $start) ){
         #if we got a liftOver region and it is same size 
         foreach my $c (@$cadds){
-            my $pos = $c->[1] - $start + $reg_start;
+            my $pos = $c->[1] - $start + $reg_start ;#plus 1 for BED format
             if ($pos > $reg_end){
                 #this shouldn't happen
                 warn "$pos is greater than region end for ".join("\t", @$c) . "\n";
@@ -162,25 +162,18 @@ sub processRegion{
 sub doLiftOver{
     my $coord = shift;
     my $cmd =  "bash -c '$liftover -minMatch=1.0 "
-               ."-positions <(echo $coord) "
+               ."<(echo $coord) "
                ."$chain /dev/stdout /dev/null "
                ."2> /dev/null'";
     my $result = `$cmd`;
-    #clean up annoying files created by liftover
-    my @lf = glob("./liftOver_*_[a-z0-9]*_[a-z0-9]*bed*");
-    foreach my $f (@lf){
-        if ($f =~ /liftOver_\S+_\S+_[\da-f]+_[\da-f]+\.bed/){
-            unlink $f;
-        }
-    }
     return $result;
 }
 
 ##################################################
 sub parseLiftOverResult{
     my $result = shift;
-    if ($result =~ /(\S+):(\d+)-(\d+)/ ){
-        return ($1, $2 ,$3);
+    if ($result =~ /(\S+)\t(\d+)\t(\d+)/ ){
+        return ($1, $2, $3);
     }
     return;
 }
