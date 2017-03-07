@@ -183,7 +183,10 @@ sub convertIndividually{
     my $cadds = shift;
     my %lift = (coord => '', result => '');
 CADD: foreach my $c (@$cadds){
-        my $coord = "chr$c->[0]:$c->[1]-$c->[1]";
+        my $chr   = $c->[0];
+        my $start = $c->[1] - 1;#for BED format
+        my $end   = $c->[1];
+        my $coord = "chr$chr\t$start\t$end";
         if ($coord ne $lift{coord}){
             $lift{result} = doLiftOver($coord);
             $lift{coord} = $coord;
@@ -191,9 +194,9 @@ CADD: foreach my $c (@$cadds){
         }
         #print "$coord =$lift{result}\n";#debug
         my $reason = '';
-        if ($lift{result} and $lift{result} =~ /(\S+):(\d+)-\2/ ){
+        if ($lift{result} and $lift{result} =~ /(\S+)\t(\d+)\t(\d+)/ ){
             my $chr = $1;
-            my $pos = $2;
+            my $pos = $2 + 1;#+1 for BED format
             if (checkRefCoordinate
                 (
                     chr => $chr,
